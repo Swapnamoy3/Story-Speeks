@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF to Audiobook Weaver</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>PDF to Audiobook Weaver</h1>
+        <p>Upload your PDF document and convert it into a downloadable audiobook.</p>
+
+        <div class="upload-section">
+            <form id="uploadForm">
+                <input type="file" id="pdfFile" accept=".pdf" required>
+                <button type="submit" id="uploadButton" disabled>Upload PDF</button>
+            </form>
+            <div id="statusArea" class="status-area"></div>
+        </div>
+
+        <div id="resultArea" class="result-area hidden">
+            <h2>Your Audiobook is Ready!</h2>
+            <audio id="audioPlayer" controls></audio>
+            <a id="downloadLink" href="#" download="audiobook.mp3">Download Audiobook</a>
+        </div>
+
+        <div id="errorArea" class="error-area hidden">
+            <h2>Error</h2>
+            <p id="errorMessage"></p>
+        </div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
