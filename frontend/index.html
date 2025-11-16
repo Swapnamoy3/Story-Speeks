@@ -14,6 +14,10 @@
         <div class="upload-section">
             <form id="uploadForm">
                 <input type="file" id="pdfFile" accept=".pdf" required>
+                <label for="voice-select">Choose a voice:</label>
+                <select name="voice" id="voice-select" required>
+                    <option value="">Loading voices...</option>
+                </select>
                 <button type="submit" id="uploadButton" disabled>Upload PDF</button>
             </form>
             <div id="statusArea" class="status-area"></div>

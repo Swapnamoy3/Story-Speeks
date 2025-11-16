@@ -6,7 +6,7 @@ class EdgeTTSEngine(TTSEngine):
     """
     Concrete implementation of TTSEngine using the edge-tts library.
     """
-    def __init__(self, voice: str = "en-US-AriaNeural", communicate_rate: str = "+0%", communicate_volume: str = "+0%"):
+    def __init__(self, voice: str, communicate_rate: str = "+0%", communicate_volume: str = "+0%"):
         self.voice = voice
         self.communicate_rate = communicate_rate
         self.communicate_volume = communicate_volume
@@ -30,7 +30,7 @@ class EdgeTTSEngine(TTSEngine):
 if __name__ == "__main__":
     # Example usage (for testing purposes)
     async def main():
-        engine = EdgeTTSEngine()
+        engine = EdgeTTSEngine(voice="en-US-AriaNeural")
         print("Synthesizing 'Hello, world! This is a test.'")
         audio_data = await engine.synthesize("Hello, world! This is a test.")
         with open("test_edge_tts.mp3", "wb") as f:

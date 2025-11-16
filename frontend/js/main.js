@@ -8,8 +8,30 @@ document.addEventListener("DOMContentLoaded", () => {
     const downloadLink = document.getElementById("downloadLink");
     const errorArea = document.getElementById("errorArea");
     const errorMessage = document.getElementById("errorMessage");
+    const voiceSelect = document.getElementById("voice-select");
 
     let pollingInterval;
+
+    async function loadVoices() {
+        try {
+            const response = await fetch("/api/v1/voices");
+            if (!response.ok) {
+                throw new Error(`Failed to load voices: ${response.status}`);
+            }
+            const voices = await response.json();
+            voiceSelect.innerHTML = ""; // Clear "Loading..."
+            voices.forEach(voice => {
+                const option = document.createElement("option");
+                option.value = voice.short_name;
+                option.textContent = voice.name;
+                voiceSelect.appendChild(option);
+            });
+            uploadButton.disabled = false;
+        } catch (error) {
+            voiceSelect.innerHTML = `<option value="">${error.message}</option>`;
+            showError(`Could not load voices. Please refresh the page. ${error.message}`);
+        }
+    }
 
     // Enable upload button only when a file is selected
     pdfFile.addEventListener("change", () => {
@@ -23,6 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const formData = new FormData();
         formData.append("file", pdfFile.files[0]);
+        formData.append("voice", voiceSelect.value);
 
         try {
             const response = await fetch("/api/v1/upload", {
@@ -92,4 +115,6 @@ document.addEventListener("DOMContentLoaded", () => {
             clearInterval(pollingInterval);
         }
     }
+
+    loadVoices();
 });

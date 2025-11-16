@@ -15,13 +15,14 @@ class JobManager:
                     cls._instance._jobs: Dict[str, Dict] = {}
         return cls._instance
 
-    def create_job(self) -> str:
+    def create_job(self, voice: str) -> str:
         job_id = str(uuid.uuid4())
         with self._lock:
             self._jobs[job_id] = {
                 "status": JobStatusEnum.PENDING,
                 "message": "Job created, waiting to start.",
-                "filename": None
+                "filename": None,
+                "voice": voice,
             }
         return job_id
 

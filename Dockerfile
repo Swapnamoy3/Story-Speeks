@@ -22,6 +22,9 @@ COPY ./backend /app/backend
 # Copy the frontend directory to the /app directory
 COPY ./frontend /app/frontend
 
+# Copy the voices.txt file to the /app directory
+COPY ./voices.txt /app/voices.txt
+
 # Make port 80 available to the world outside this container
 EXPOSE 80
 

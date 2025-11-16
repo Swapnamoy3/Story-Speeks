@@ -16,3 +16,7 @@ class JobStatusResponse(BaseModel):
     status: JobStatusEnum
     message: Optional[str] = None
     filename: Optional[str] = None
+
+class Voice(BaseModel):
+    name: str
+    short_name: str

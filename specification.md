@@ -258,3 +258,133 @@ The `convert_pdf_to_audio` function must be implemented with the following concu
 
 *   **`TTSEngine` Interface (`core/tts/base.py`):** No changes are required. The definition of `synthesize` as an `async` method already supports this concurrent execution model perfectly. This demonstrates the strength of the chosen design pattern.
 *   **`JobManager` (`services/job_manager.py`):** Consider adding more granular progress updates. For example, after `asyncio.gather` completes, the `message` field in the job status could be updated to `f"Synthesized {len(successful_chunks)}/{len(total_chunks)} chunks."` before proceeding to the combination step.
+
+
+
+---- 
+# Part 2
+---
+Excellent. This is a fantastic next step that significantly enhances the user experience and showcases the power of your modular design.
+
+Here is a new, additional specification document designed to be provided to the Gemini CLI. It details all the necessary changes to implement the voice selection feature, building directly upon the existing project structure.
+
+---
+
+### **Addendum to Project Specification: Voice Selection Feature**
+
+**Version:** 1.2
+**Date:** May 22, 2024
+
+**To:** Gemini CLI
+**From:** Project Architect
+**Subject:** Implementation of a User-Selectable Voice Configuration Feature
+
+This document provides detailed instructions for upgrading the "PDF-to-Audiobook Weaver" project with a voice selection feature. The user must be able to choose from a list of all available Microsoft Edge TTS voices, and their selection must be used for the audio generation.
+
+#### **1. High-Level Objective**
+
+To empower users to select their preferred voice and language for the generated audiobook. This requires fetching the available voices from the `edge-tts` library, presenting them in the UI, and processing the user's choice in the backend.
+
+---
+
+#### **2. Backend Specification Changes**
+
+The backend is responsible for providing the list of voices and using the selected voice during job processing.
+
+**2.1. New Data Model (`backend/app/models/schemas.py`)**
+
+A new Pydantic model is required to represent a single voice option.
+
+*   **`Voice`**:
+    *   `name`: string (The user-friendly display name, e.g., "English (US), Aria (Neural)")
+    *   `short_name`: string (The technical identifier required by the `edge-tts` library, e.g., "en-US-AriaNeural")
+
+**2.2. New API Endpoint (`backend/app/api/v1/endpoints.py`)**
+
+A new endpoint must be created to serve the list of available voices to the frontend.
+
+1.  **`GET /api/v1/voices`**:
+    *   **Purpose:** To provide a list of all supported TTS voices.
+    *   **Logic:**
+        *   This endpoint should use the `edge-tts` library's built-in functionality (e.g., `await edge_tts.list_voices()`) to get a list of all available voices.
+        *   It must then format this data into a list of `Voice` objects as defined in the schema above.
+        *   **Performance Optimization:** The voice list is static and fetching it can be slow. The result of the first call to `edge_tts.list_voices()` **must be cached in memory** when the application starts up, so subsequent requests to this endpoint are served instantly without re-invoking the library command.
+    *   **Success Response (200 OK):** A JSON array of `Voice` objects: `List[Voice]`.
+
+**2.3. Modified API Endpoint (`backend/app/api/v1/endpoints.py`)**
+
+The existing upload endpoint must be modified to accept the user's voice selection.
+
+1.  **`POST /api/v1/upload`**:
+    *   **Request:** The request is still `multipart/form-data`, but it now accepts an **additional form field**:
+        *   `file`: The `UploadFile` (as before).
+        *   `voice`: A `string` representing the `short_name` of the selected voice (e.g., "en-US-AriaNeural"). This should be received using FastAPI's `Form(...)`.
+    *   **Logic:** When a job is created, the value of the `voice` field must be stored alongside the job's status in the `JobManager`.
+
+**2.4. Modified Service Layer (`backend/app/services/job_manager.py`)**
+
+The `JobManager`'s internal data structure must be updated to store the selected voice for each job.
+
+*   The dictionary value for a `job_id` should now be an object that includes the `voice` parameter. For example: `{"status": "pending", "message": "Job created", "voice": "en-US-AriaNeural"}`.
+*   The `create_job` function must be updated to accept the `voice` string as an argument.
+
+**2.5. Modified TTS Engine (`backend/app/core/tts/`)**
+
+The Strategy Pattern implementation needs to be adapted to handle per-job voice configuration.
+
+1.  **`edge_tts_engine.py`**:
+    *   The `EdgeTTSEngine` class's `__init__` method must be modified to accept a voice parameter: `__init__(self, voice: str)`.
+    *   This `voice` parameter should be stored as an instance variable (e.g., `self.voice`).
+    *   The `synthesize` method must then use `self.voice` when calling the `edge-tts.Communicate` function.
+
+2.  **`__init__.py` (The Factory)**:
+    *   The factory function `get_tts_engine()` must be modified to accept the voice parameter: `get_tts_engine(voice: str) -> TTSEngine`.
+    *   When instantiating `EdgeTTSEngine`, it must pass the received `voice` string to its constructor: `return EdgeTTSEngine(voice=voice)`.
+
+**2.6. Modified Conversion Task (`backend/app/core/tasks.py`)**
+
+The main pipeline must now retrieve and use the stored voice for the job.
+
+*   Inside `convert_pdf_to_audio`, after starting the job, it must retrieve the full job details from the `JobManager`, including the `voice` string.
+*   When it calls the TTS factory, it must pass this specific voice: `tts_engine = get_tts_engine(voice=job_details['voice'])`.
+
+---
+
+#### **3. Frontend Specification Changes**
+
+The frontend needs a UI element for voice selection and logic to populate it and send the choice.
+
+**3.1. Modified UI (`frontend/index.html`)**
+
+*   Inside the `<form>` element, add a new UI component for voice selection. A `<select>` dropdown menu is the ideal choice.
+    ```html
+    <label for="voice-select">Choose a voice:</label>
+    <select name="voice" id="voice-select" required>
+        <option value="">Loading voices...</option>
+    </select>
+    ```
+*   The dropdown should be disabled or show a "Loading..." message until it is populated with data from the API.
+
+**3.2. Modified Client-Side Logic (`frontend/js/main.js`)**
+
+1.  **New Function: `loadVoices()`**:
+    *   Create a new `async` function that is executed as soon as the page loads.
+    *   This function will send a `GET` request to the new `/api/v1/voices` endpoint.
+    *   Upon receiving the list of voices, it will:
+        *   Get a reference to the `<select id="voice-select">` element.
+        *   Clear any existing options (like the "Loading..." message).
+        *   Iterate through the array of voice objects. For each object, create a new `<option>` element.
+        *   Set the option's `value` attribute to the voice's `short_name`.
+        *   Set the option's display text to the voice's user-friendly `name`.
+        *   Append the new option to the select element.
+        *   Enable the select element and the submit button.
+
+2.  **Modified Form Submission Logic**:
+    *   When the user submits the form, the logic that creates the `FormData` object must be updated.
+    *   In addition to appending the file, it must now also append the selected voice from the dropdown.
+    ```javascript
+    // Inside the form's 'submit' event listener
+    const selectedVoice = document.getElementById('voice-select').value;
+    formData.append('file', document.getElementById('pdf-file').files[0]);
+    formData.append('voice', selectedVoice); // <-- This line is new
+    ```

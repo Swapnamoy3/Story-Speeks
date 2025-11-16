@@ -32,6 +32,15 @@ async def convert_pdf_to_audio(job_id: str, pdf_path: Path):
     
     successful_chunk_paths = []
     try:
+        # Get job details, including the voice
+        job_details = job_manager.get_job(job_id)
+        if not job_details:
+            raise RuntimeError(f"Job {job_id} not found.")
+        
+        voice = job_details.get("voice")
+        if not voice:
+            raise RuntimeError(f"No voice selected for job {job_id}.")
+
         # 1. Parse PDF
         job_manager.update_job_status(job_id, JobStatusEnum.PROCESSING, "Parsing PDF...")
         text_content = parse_pdf(str(pdf_path))
@@ -46,7 +55,7 @@ async def convert_pdf_to_audio(job_id: str, pdf_path: Path):
 
         # 3. Synthesize Audio Chunks Concurrently
         job_manager.update_job_status(job_id, JobStatusEnum.PROCESSING, f"Synthesizing {len(sentences)} audio chunks...")
-        tts_engine = get_tts_engine()
+        tts_engine = get_tts_engine(voice=voice)
         
         # Concurrency Limiting
         # A sensible default limit, such as asyncio.Semaphore(10), should be used.

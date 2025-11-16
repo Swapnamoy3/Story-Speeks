@@ -1,16 +1,73 @@
 import os
 from pathlib import Path
-from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks
+from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, Form
 from fastapi.responses import FileResponse
-from ...models.schemas import JobCreationResponse, JobStatusResponse, JobStatusEnum
+from ...models.schemas import JobCreationResponse, JobStatusResponse, JobStatusEnum, Voice
 from ...services.job_manager import JobManager
 from ...core.tasks import convert_pdf_to_audio, UPLOAD_DIR, FINAL_AUDIO_DIR
+from typing import List
+import logging
 
 router = APIRouter()
 job_manager = JobManager()
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def parse_voices_from_file(file_path: str) -> List[Voice]:
+    """
+    Parses the voices.txt file and returns a list of Voice objects.
+    """
+    voices = []
+    try:
+        with open(file_path, "r", encoding="utf-16") as f: # Changed encoding to utf-16
+            lines = f.readlines()
+            # Skip header lines
+            for i, line in enumerate(lines):
+                if i < 2: # Skip the first two header lines
+                    continue
+                
+                line = line.strip()
+                if not line:
+                    continue
+
+                parts = line.split()
+                if len(parts) > 0:
+                    short_name = parts[0]
+                    # Create a more user-friendly name from the short_name
+                    # Example: "en-US-AriaNeural" -> "English (US) Aria Neural"
+                    name_parts = short_name.split('-')
+                    friendly_name = " ".join([part.capitalize() for part in name_parts])
+                    
+                    voices.append(Voice(name=friendly_name, short_name=short_name))
+                else:
+                    logger.warning(f"Skipping malformed line in voices.txt: {line}")
+    except FileNotFoundError:
+        logger.error(f"voices.txt not found at {file_path}")
+        raise
+    except Exception as e:
+        logger.error(f"Error parsing voices.txt: {e}", exc_info=True)
+        raise
+    return voices
+
+@router.get("/voices", response_model=List[Voice])
+async def get_voices():
+    """
+    Provides a list of all supported TTS voices from voices.txt.
+    """
+    try:
+        voices = parse_voices_from_file("/app/voices.txt")
+        return voices
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error reading voices file: {e}")
+
 @router.post("/upload", response_model=JobCreationResponse)
-async def upload_pdf(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+async def upload_pdf(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    voice: str = Form(...),
+):
     """
     Uploads a PDF file, initiates conversion to audiobook, and returns a job ID.
     """
@@ -22,7 +79,7 @@ async def upload_pdf(background_tasks: BackgroundTasks, file: UploadFile = File(
     with open(file_location, "wb") as f:
         f.write(await file.read())
 
-    job_id = job_manager.create_job() 
+    job_id = job_manager.create_job(voice=voice) 
     
     # Add the conversion task to background tasks
     background_tasks.add_task(convert_pdf_to_audio, job_id, file_location)
