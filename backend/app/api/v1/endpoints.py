@@ -103,9 +103,9 @@ async def get_conversion_status(job_id: str):
     )
 
 @router.get("/download/{filename}")
-async def download_audio(filename: str, background_tasks: BackgroundTasks):
+async def download_audio(filename: str):
     """
-    Serves the final converted audiobook file and deletes it after sending.
+    Serves the final converted audiobook file.
     """
     # Basic security check: prevent directory traversal
     if "/" in filename or "\\" in filename or ".." in filename:
@@ -119,11 +119,4 @@ async def download_audio(filename: str, background_tasks: BackgroundTasks):
     if not file_path.resolve().parent == FINAL_AUDIO_DIR.resolve():
         raise HTTPException(status_code=400, detail="Invalid file path.")
 
-    def cleanup():
-        try:
-            os.remove(file_path)
-        except OSError as e:
-            print(f"Error removing final audio file {file_path}: {e}")
-
-    background_tasks.add_task(cleanup)
     return FileResponse(path=file_path, media_type="audio/mpeg", filename=filename)

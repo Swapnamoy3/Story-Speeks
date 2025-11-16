@@ -4,6 +4,7 @@ import uuid
 from pathlib import Path
 from pydub import AudioSegment
 from typing import Optional, Union
+from datetime import datetime, timedelta
 
 from .pdf_parser import parse_pdf
 from .text_chunker import chunk_text
@@ -24,6 +25,18 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 PROCESSING_DIR.mkdir(parents=True, exist_ok=True)
 FINAL_AUDIO_DIR.mkdir(parents=True, exist_ok=True)
 
+async def schedule_file_deletion(file_path: Path, delay_seconds: int):
+    """
+    Schedules a file for deletion after a specified delay.
+    """
+    await asyncio.sleep(delay_seconds)
+    if file_path.exists():
+        try:
+            os.remove(file_path)
+            print(f"Scheduled deletion: Removed {file_path}")
+        except OSError as e:
+            print(f"Scheduled deletion: Error removing {file_path}: {e}")
+
 async def convert_pdf_to_audio(job_id: str, pdf_path: Path):
     """
     Orchestrates the conversion of a PDF to an audiobook.
@@ -31,6 +44,7 @@ async def convert_pdf_to_audio(job_id: str, pdf_path: Path):
     job_manager.update_job_status(job_id, JobStatusEnum.PROCESSING, "Starting PDF to audiobook conversion.")
     
     successful_chunk_paths = []
+    final_audio_path = None # Initialize to None
     try:
         # Get job details, including the voice
         job_details = job_manager.get_job(job_id)
@@ -116,6 +130,9 @@ async def convert_pdf_to_audio(job_id: str, pdf_path: Path):
             "Audiobook conversion complete!", 
             filename=final_audio_filename
         )
+
+        # Schedule deletion of the final audio file after 1 hour
+        asyncio.create_task(schedule_file_deletion(final_audio_path, 3600)) # 3600 seconds = 1 hour
 
     except Exception as e:
         print(f"Job {job_id} failed: {e}")
