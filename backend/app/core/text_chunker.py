@@ -24,5 +24,15 @@ def chunk_text(text: str) -> List[str]:
 
     # Use NLTK for sentence tokenization
     sentences = nltk.sent_tokenize(cleaned_text)
+    chunks = []
+    chunk = []
+    for sentence in sentences:
+        if len(chunk) < 10:
+            chunk.append(sentence)
+        else:
+            chunks.append(chunk)
+            chunk = [sentence]
+    if chunk:
+        chunks.append(chunk)
 
-    return sentences
+    return chunks

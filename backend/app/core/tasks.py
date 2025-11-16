@@ -73,7 +73,7 @@ async def convert_pdf_to_audio(job_id: str, pdf_path: Path):
         
         # Concurrency Limiting
         # A sensible default limit, such as asyncio.Semaphore(10), should be used.
-        semaphore = asyncio.Semaphore(10) 
+        semaphore = asyncio.Semaphore(20) 
         
         async def process_chunk(index: int, text: str) -> Union[Path, str]:
             """
@@ -92,7 +92,7 @@ async def convert_pdf_to_audio(job_id: str, pdf_path: Path):
                     print(error_message)
                     return error_message
 
-        tasks = [process_chunk(i, sentence) for i, sentence in enumerate(sentences)]
+        tasks = [process_chunk(i, " ".join(sentence).strip("\n")) for i, sentence in enumerate(sentences)]
         results = await asyncio.gather(*tasks)
 
         successful_chunk_paths = [r for r in results if isinstance(r, Path) and r.exists()]
