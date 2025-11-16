@@ -27,6 +27,10 @@ This project is a web service that transforms user-uploaded PDF documents into s
     ```
 2.  The application will be accessible at `http://localhost:8080`.
 
+## Deployment
+
+The application is deployed and accessible at: [https://story-speeks.onrender.com](https://story-speeks.onrender.com)
+
 ### Environment Variables
 
 You can customize the TTS engine by setting the `TTS_ENGINE` environment variable when running the container.
