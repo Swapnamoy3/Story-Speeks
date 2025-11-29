@@ -1,7 +1,25 @@
+:root {
+    --primary-color: #4a90e2;
+    --primary-hover: #357ABD;
+    --secondary-color: #50e3c2;
+    --secondary-hover: #38a892;
+    --background-color: #f7f9fc;
+    --container-bg: #ffffff;
+    --text-dark: #333;
+    --text-light: #6c757d;
+    --border-color: #e0e6ed;
+    --error-color: #e74c3c;
+    --shadow-color: rgba(0, 0, 0, 0.08);
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: #f4f7f6;
-    color: #333;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-dark);
     margin: 0;
     padding: 2rem;
     display: flex;
@@ -11,23 +29,32 @@ body {
 }
 
 .container {
-    background-color: #ffffff;
-    padding: 2rem 3rem;
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-    max-width: 600px;
+    background-color: var(--container-bg);
+    padding: 2.5rem;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px var(--shadow-color);
+    max-width: 550px;
     width: 100%;
     text-align: center;
+    transition: all 0.3s ease-in-out;
 }
 
 h1 {
-    color: #2c3e50;
+    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-fill-color: transparent;
+    margin-top: 0;
     margin-bottom: 0.5rem;
+    font-weight: 700;
 }
 
 p {
-    color: #7f8c8d;
+    color: var(--text-light);
     margin-bottom: 2rem;
+    font-size: 1.1rem;
+    line-height: 1.6;
 }
 
 .upload-section {
@@ -37,90 +64,194 @@ p {
 #uploadForm {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-    align-items: center;
+    gap: 1.5rem;
 }
 
-input[type="file"] {
-    border: 2px dashed #bdc3c7;
-    padding: 1.5rem;
-    border-radius: 8px;
+/* Custom File Input Styling */
+.file-upload-label {
+    border: 2px dashed var(--border-color);
+    padding: 2rem;
+    border-radius: 12px;
     cursor: pointer;
-    transition: border-color 0.3s;
+    transition: border-color 0.3s, background-color 0.3s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    color: var(--text-light);
+}
+
+.file-upload-label:hover {
+    border-color: var(--primary-color);
+    background-color: #f7f9fc;
+}
+
+.file-upload-label svg {
+    width: 40px;
+    height: 40px;
+    stroke: var(--primary-color);
+    stroke-width: 1.5;
+}
+
+#pdfFile {
+    display: none; /* Hide the actual input */
+}
+
+#fileName {
+    font-weight: 500;
+}
+
+/* Voice Selection Styling */
+.voice-selection {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
     width: 100%;
 }
 
-input[type="file"]:hover {
-    border-color: #3498db;
+.voice-selection label {
+    font-weight: 500;
+    color: var(--text-dark);
 }
 
-button {
-    background-color: #3498db;
-    color: white;
-    border: none;
-    padding: 0.8rem 1.5rem;
+#voice-select {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     font-size: 1rem;
+    background-color: #fff;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1em;
     cursor: pointer;
-    transition: background-color 0.3s, transform 0.2s;
 }
 
-button:disabled {
-    background-color: #bdc3c7;
+#uploadButton {
+    background: linear-gradient(45deg, var(--primary-color), var(--primary-hover));
+    color: white;
+    border: none;
+    padding: 0.9rem 1.5rem;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+}
+
+#uploadButton:disabled {
+    background: #bdc3c7;
     cursor: not-allowed;
+    box-shadow: none;
 }
 
-button:hover:not(:disabled) {
-    background-color: #2980b9;
-    transform: translateY(-2px);
+#uploadButton:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(74, 144, 226, 0.4);
 }
 
 .status-area {
     margin-top: 1.5rem;
-    font-style: italic;
-    color: #7f8c8d;
+    color: var(--text-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 24px;
+}
+
+.loader {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid var(--primary-color);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 .result-area, .error-area {
     margin-top: 2rem;
     padding: 1.5rem;
-    border-radius: 8px;
-    background-color: #ecf0f1;
+    border-radius: 12px;
+    text-align: left;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+.result-area {
+     background-color: #f0fdf4;
+     border: 1px solid #bbf7d0;
+}
+
+.error-area {
+    background-color: #fff5f5;
+    border: 1px solid #fecaca;
+    color: #b91c1c;
 }
 
 .result-area h2, .error-area h2 {
     margin-top: 0;
-    color: #2c3e50;
+    margin-bottom: 1rem;
+    color: var(--text-dark);
+    font-weight: 600;
+}
+
+.error-area h2 {
+     color: #b91c1c;
 }
 
 #audioPlayer {
     width: 100%;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
 }
 
 #downloadLink {
     display: inline-block;
-    background-color: #2ecc71;
+    background: linear-gradient(45deg, var(--secondary-color), #34d399);
     color: white;
     padding: 0.8rem 1.5rem;
     text-decoration: none;
     border-radius: 8px;
-    transition: background-color 0.3s;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(80, 227, 194, 0.4);
 }
 
 #downloadLink:hover {
-    background-color: #27ae60;
-}
-
-.error-area {
-    background-color: #e74c3c;
-    color: white;
-}
-
-.error-area h2 {
-    color: white;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(80, 227, 194, 0.5);
 }
 
 .hidden {
     display: none;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+    body {
+        padding: 1rem;
+    }
+    .container {
+        padding: 1.5rem;
+    }
+    h1 {
+        font-size: 1.8rem;
+    }
+    p {
+        font-size: 1rem;
+    }
 }

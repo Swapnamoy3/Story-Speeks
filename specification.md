@@ -388,3 +388,446 @@ The frontend needs a UI element for voice selection and logic to populate it and
     formData.append('file', document.getElementById('pdf-file').files[0]);
     formData.append('voice', selectedVoice); // <-- This line is new
     ```
+-----
+
+
+# PART 3
+
+```
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF to Audiobook Weaver</title>
+    
+    <!-- Google Fonts for a modern look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --primary-hover: #357ABD;
+            --secondary-color: #50e3c2;
+            --secondary-hover: #38a892;
+            --background-color: #f7f9fc;
+            --container-bg: #ffffff;
+            --text-dark: #333;
+            --text-light: #6c757d;
+            --border-color: #e0e6ed;
+            --error-color: #e74c3c;
+            --shadow-color: rgba(0, 0, 0, 0.08);
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-dark);
+            margin: 0;
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: var(--container-bg);
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px var(--shadow-color);
+            max-width: 550px;
+            width: 100%;
+            text-align: center;
+            transition: all 0.3s ease-in-out;
+        }
+
+        h1 {
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-fill-color: transparent;
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        p {
+            color: var(--text-light);
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .upload-section {
+            margin-bottom: 2rem;
+        }
+
+        #uploadForm {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Custom File Input Styling */
+        .file-upload-label {
+            border: 2px dashed var(--border-color);
+            padding: 2rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: border-color 0.3s, background-color 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem;
+            color: var(--text-light);
+        }
+
+        .file-upload-label:hover {
+            border-color: var(--primary-color);
+            background-color: #f7f9fc;
+        }
+        
+        .file-upload-label svg {
+            width: 40px;
+            height: 40px;
+            stroke: var(--primary-color);
+            stroke-width: 1.5;
+        }
+        
+        #pdfFile {
+            display: none; /* Hide the actual input */
+        }
+        
+        #fileName {
+            font-weight: 500;
+        }
+        
+        /* Voice Selection Styling */
+        .voice-selection {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+            width: 100%;
+        }
+        
+        .voice-selection label {
+            font-weight: 500;
+            color: var(--text-dark);
+        }
+
+        #voice-select {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            background-color: #fff;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1em;
+            cursor: pointer;
+        }
+
+        #uploadButton {
+            background: linear-gradient(45deg, var(--primary-color), var(--primary-hover));
+            color: white;
+            border: none;
+            padding: 0.9rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+        }
+
+        #uploadButton:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        #uploadButton:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(74, 144, 226, 0.4);
+        }
+        
+        .status-area {
+            margin-top: 1.5rem;
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            min-height: 24px;
+        }
+
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result-area, .error-area {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: left;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .result-area {
+             background-color: #f0fdf4;
+             border: 1px solid #bbf7d0;
+        }
+        
+        .error-area {
+            background-color: #fff5f5;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+        }
+
+        .result-area h2, .error-area h2 {
+            margin-top: 0;
+            margin-bottom: 1rem;
+            color: var(--text-dark);
+            font-weight: 600;
+        }
+        
+        .error-area h2 {
+             color: #b91c1c;
+        }
+
+        #audioPlayer {
+            width: 100%;
+            margin-bottom: 1.5rem;
+        }
+
+        #downloadLink {
+            display: inline-block;
+            background: linear-gradient(45deg, var(--secondary-color), #34d399);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(80, 227, 194, 0.4);
+        }
+
+        #downloadLink:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(80, 227, 194, 0.5);
+        }
+
+        .hidden {
+            display: none;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 600px) {
+            body {
+                padding: 1rem;
+            }
+            .container {
+                padding: 1.5rem;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+            p {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PDF to Audiobook Weaver</h1>
+        <p>Upload your document, select a voice, and we'll weave it into a high-quality audiobook for you.</p>
+
+        <div class="upload-section">
+            <form id="uploadForm">
+                <label for="pdfFile" class="file-upload-label">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                    </svg>
+                    <span id="fileName">Click to select a PDF file</span>
+                </label>
+                <input type="file" id="pdfFile" accept=".pdf" required>
+
+                <div class="voice-selection">
+                    <label for="voice-select">Choose a voice:</label>
+                    <select name="voice" id="voice-select" required>
+                        <option value="" disabled selected>Loading voices...</option>
+                    </select>
+                </div>
+                
+                <button type="submit" id="uploadButton" disabled>Weave My Audiobook</button>
+            </form>
+            <div id="statusArea" class="status-area">
+                <!-- Status messages will appear here -->
+            </div>
+        </div>
+
+        <div id="resultArea" class="result-area hidden">
+            <h2>Your Audiobook is Ready!</h2>
+            <audio id="audioPlayer" controls></audio>
+            <a id="downloadLink" href="#" download="audiobook.mp3">Download Audiobook</a>
+        </div>
+
+        <div id="errorArea" class="error-area hidden">
+            <h2>An Error Occurred</h2>
+            <p id="errorMessage"></p>
+        </div>
+    </div>
+
+    <script>
+        // Your JavaScript logic will go here.
+        // This is where you would handle:
+        // 1. Fetching available voices from your backend and populating the <select> dropdown.
+        // 2. An event listener for the file input to show the selected file name.
+        // 3. An event listener for the form submission to:
+        //    - Prevent the default form submission.
+        //    - Show a loading/processing state (e.g., the spinner).
+        //    - Create a FormData object with the PDF file and selected voice.
+        //    - Send the data to your backend API endpoint using fetch().
+        //    - Handle the response from the backend (success or error).
+        // 4. On success:
+        //    - Hide the loading state.
+        //    - Show the resultArea.
+        //    - Set the `src` for the audio player and the `href` for the download link.
+        // 5. On error:
+        //    - Hide the loading state.
+        //    - Show the errorArea with a descriptive message.
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const uploadForm = document.getElementById('uploadForm');
+            const pdfFile = document.getElementById('pdfFile');
+            const voiceSelect = document.getElementById('voice-select');
+            const uploadButton = document.getElementById('uploadButton');
+            const statusArea = document.getElementById('statusArea');
+            const resultArea = document.getElementById('resultArea');
+            const errorArea = document.getElementById('errorArea');
+            const audioPlayer = document.getElementById('audioPlayer');
+            const downloadLink = document.getElementById('downloadLink');
+            const errorMessage = document.getElementById('errorMessage');
+            const fileNameDisplay = document.getElementById('fileName');
+
+            // --- Mock function to populate voices ---
+            // In a real application, you would fetch this from your server.
+            function populateVoices() {
+                const voices = [
+                    { value: 'alloy', text: 'Alloy (Male)' },
+                    { value: 'echo', text: 'Echo (Male)' },
+                    { value: 'fable', text: 'Fable (Male)' },
+                    { value: 'onyx', text: 'Onyx (Male)' },
+                    { value: 'nova', text: 'Nova (Female)' },
+                    { value: 'shimmer', text: 'Shimmer (Female)' }
+                ];
+
+                voiceSelect.innerHTML = '<option value="" disabled selected>Select a voice</option>'; // Clear "Loading..."
+                voices.forEach(voice => {
+                    const option = document.createElement('option');
+                    option.value = voice.value;
+                    option.textContent = voice.text;
+                    voiceSelect.appendChild(option);
+                });
+                
+                // Enable the form once voices are loaded
+                checkFormValidity();
+            }
+            
+            // --- Event Listeners ---
+            pdfFile.addEventListener('change', () => {
+                if (pdfFile.files.length > 0) {
+                    fileNameDisplay.textContent = pdfFile.files[0].name;
+                } else {
+                    fileNameDisplay.textContent = 'Click to select a PDF file';
+                }
+                checkFormValidity();
+            });
+
+            voiceSelect.addEventListener('change', checkFormValidity);
+
+            function checkFormValidity() {
+                // Enable the button only if a file is selected and a voice is chosen
+                if (pdfFile.files.length > 0 && voiceSelect.value) {
+                    uploadButton.disabled = false;
+                } else {
+                    uploadButton.disabled = true;
+                }
+            }
+
+            // --- Form Submission Handler (Placeholder) ---
+            uploadForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                
+                // Hide previous results/errors
+                resultArea.classList.add('hidden');
+                errorArea.classList.add('hidden');
+                
+                // Show loading state
+                statusArea.innerHTML = `<div class="loader"></div><span>Weaving your audio... this may take a moment.</span>`;
+                uploadButton.disabled = true;
+
+                // --- MOCK API CALL (replace with your actual fetch call) ---
+                console.log('Form Submitted!');
+                console.log('File:', pdfFile.files[0].name);
+                console.log('Voice:', voiceSelect.value);
+
+                // Simulate an API call with a timeout
+                setTimeout(() => {
+                    // **SIMULATE SUCCESS**
+                    const mockAudioUrl = '#'; // In a real app, this would be the URL to the generated MP3
+                    statusArea.innerHTML = ''; // Clear status
+                    resultArea.classList.remove('hidden');
+                    audioPlayer.src = mockAudioUrl;
+                    downloadLink.href = mockAudioUrl;
+                    uploadButton.disabled = false;
+                    checkFormValidity(); // Re-enable button if form is still valid
+
+                    /*
+                    // **SIMULATE ERROR**
+                    statusArea.innerHTML = ''; // Clear status
+                    errorArea.classList.remove('hidden');
+                    errorMessage.textContent = 'Failed to process the PDF. Please try again with a different file.';
+                    uploadButton.disabled = false;
+                    checkFormValidity();
+                    */
+
+                }, 4000); // Simulate a 4-second processing time
+            });
+
+            // --- Initial setup ---
+            populateVoices();
+        });
+    </script>
+</body>
+</html>
+```

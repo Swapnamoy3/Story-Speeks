@@ -4,23 +4,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF to Audiobook Weaver</title>
+    
+    <!-- Google Fonts for a modern look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
     <div class="container">
         <h1>PDF to Audiobook Weaver</h1>
-        <p>Upload your PDF document and convert it into a downloadable audiobook.</p>
+        <p>Upload your document, select a voice, and we'll weave it into a high-quality audiobook for you.</p>
 
         <div class="upload-section">
             <form id="uploadForm">
+                <label for="pdfFile" class="file-upload-label">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                    </svg>
+                    <span id="fileName">Click to select a PDF file</span>
+                </label>
                 <input type="file" id="pdfFile" accept=".pdf" required>
-                <label for="voice-select">Choose a voice:</label>
-                <select name="voice" id="voice-select" required>
-                    <option value="">Loading voices...</option>
-                </select>
-                <button type="submit" id="uploadButton" disabled>Upload PDF</button>
+
+                <div class="voice-selection">
+                    <label for="voice-select">Choose a voice:</label>
+                    <select name="voice" id="voice-select" required>
+                        <option value="" disabled selected>Loading voices...</option>
+                    </select>
+                </div>
+                
+                <button type="submit" id="uploadButton" disabled>Weave My Audiobook</button>
             </form>
-            <div id="statusArea" class="status-area"></div>
+            <div id="statusArea" class="status-area">
+                <!-- Status messages will appear here -->
+            </div>
         </div>
 
         <div id="resultArea" class="result-area hidden">
@@ -30,7 +47,7 @@
         </div>
 
         <div id="errorArea" class="error-area hidden">
-            <h2>Error</h2>
+            <h2>An Error Occurred</h2>
             <p id="errorMessage"></p>
         </div>
     </div>
