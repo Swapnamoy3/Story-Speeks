@@ -127,7 +127,8 @@ async def convert_pdf_to_audio(job_id: str, pdf_path: Path):
         tts_engine = get_tts_engine(voice=voice)
         
         # Concurrency Limiting
-        semaphore = asyncio.Semaphore(20) 
+        # Reduced to 5 to avoid rate limiting on cloud environments like Render
+        semaphore = asyncio.Semaphore(5) 
         
         completed_chunks = 0
         total_chunks = len(sentences)
@@ -139,27 +140,34 @@ async def convert_pdf_to_audio(job_id: str, pdf_path: Path):
             """
             nonlocal completed_chunks
             async with semaphore:
-                try:
-                    audio_bytes = await tts_engine.synthesize(text)
-                    chunk_filename = PROCESSING_DIR / f"{job_id}_chunk_{index}.mp3"
-                    
-                    # Writing to file is IO bound but small enough to be okay in async usually, 
-                    # but for strictness we could use aiofiles or run_in_executor. 
-                    # Standard open() is blocking. Let's use run_in_executor for safety.
-                    await loop.run_in_executor(None, lambda: chunk_filename.write_bytes(audio_bytes))
-                    
-                    completed_chunks += 1
-                    job_manager.update_job_status(
-                        job_id, 
-                        JobStatusEnum.PROCESSING, 
-                        f"Synthesizing audio: {completed_chunks}/{total_chunks} chunks processed."
-                    )
-                    
-                    return index, chunk_filename
-                except Exception as e:
-                    error_message = f"Error synthesizing chunk {index}: {e}"
-                    print(error_message)
-                    return index, error_message
+                retries = 3
+                for attempt in range(retries):
+                    try:
+                        audio_bytes = await tts_engine.synthesize(text)
+                        chunk_filename = PROCESSING_DIR / f"{job_id}_chunk_{index}.mp3"
+                        
+                        # Writing to file is IO bound but small enough to be okay in async usually, 
+                        # but for strictness we could use aiofiles or run_in_executor. 
+                        # Standard open() is blocking. Let's use run_in_executor for safety.
+                        await loop.run_in_executor(None, lambda: chunk_filename.write_bytes(audio_bytes))
+                        
+                        completed_chunks += 1
+                        job_manager.update_job_status(
+                            job_id, 
+                            JobStatusEnum.PROCESSING, 
+                            f"Synthesizing audio: {completed_chunks}/{total_chunks} chunks processed."
+                        )
+                        
+                        return index, chunk_filename
+                    except Exception as e:
+                        if attempt < retries - 1:
+                            print(f"Chunk {index} failed (attempt {attempt + 1}): {e}. Retrying...")
+                            await asyncio.sleep(2 * (attempt + 1)) # Exponential backoff
+                        else:
+                            error_message = f"Error synthesizing chunk {index} after {retries} attempts: {e}"
+                            print(error_message)
+                            return index, error_message
+                return index, f"Failed to synthesize chunk {index}"
 
         tasks = [process_chunk(i, " ".join(sentence).strip("\n")) for i, sentence in enumerate(sentences)]
         results = await asyncio.gather(*tasks)
