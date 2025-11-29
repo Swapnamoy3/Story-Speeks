@@ -13,26 +13,81 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let pollingInterval;
 
+    const languageSelect = document.getElementById("language-select");
+    let allVoices = [];
+
     async function loadVoices() {
         try {
             const response = await fetch("/api/v1/voices");
             if (!response.ok) {
                 throw new Error(`Failed to load voices: ${response.status}`);
             }
-            const voices = await response.json();
-            voiceSelect.innerHTML = '<option value="" disabled selected>Select a voice</option>'; // Clear "Loading..." and add default
-            voices.forEach(voice => {
-                const option = document.createElement("option");
-                option.value = voice.short_name;
-                option.textContent = voice.name;
-                voiceSelect.appendChild(option);
+            allVoices = await response.json();
+            
+            // Group voices by language/locale
+            const languages = new Set();
+            allVoices.forEach(voice => {
+                // Extract language from friendly name or short_name
+                // Assuming format "English (US) Aria Neural" or "en-US-AriaNeural"
+                // Let's use the friendly name to group: "English (US)"
+                const nameParts = voice.name.split(" ");
+                // Heuristic: Join parts until the first part that looks like a name (usually after parentheses)
+                // Actually, let's use the short_name to get the locale: "en-US"
+                const shortNameParts = voice.short_name.split("-");
+                if (shortNameParts.length >= 2) {
+                    const locale = `${shortNameParts[0]}-${shortNameParts[1]}`; // e.g., en-US
+                    languages.add(locale);
+                }
             });
-            checkFormValidity(); // Check validity after voices are loaded
+
+            // Sort and populate language dropdown
+            const sortedLanguages = Array.from(languages).sort();
+            
+            languageSelect.innerHTML = '<option value="" disabled selected>Select a Language</option>';
+            sortedLanguages.forEach(langCode => {
+                const option = document.createElement("option");
+                option.value = langCode;
+                // Display name could be improved with a mapping, but for now use the code or try to find a friendly name
+                // Let's find the first voice with this code and extract the "Language (Region)" part
+                const representativeVoice = allVoices.find(v => v.short_name.startsWith(langCode));
+                let displayName = langCode;
+                if (representativeVoice) {
+                     // "English (United States) Aria Neural" -> "English (United States)"
+                     // This is a bit loose, but let's try to split by ')'
+                     if (representativeVoice.name.includes(')')) {
+                         displayName = representativeVoice.name.split(')')[0] + ')';
+                     }
+                }
+                
+                option.textContent = displayName;
+                languageSelect.appendChild(option);
+            });
+            
+            checkFormValidity();
         } catch (error) {
-            voiceSelect.innerHTML = `<option value="" disabled selected>Error loading voices</option>`;
+            languageSelect.innerHTML = `<option value="" disabled selected>Error loading languages</option>`;
             showError(`Could not load voices. Please refresh the page. ${error.message}`);
-            checkFormValidity(); // Still check validity to disable button if needed
+            checkFormValidity();
         }
+    }
+
+    function populateVoices(langCode) {
+        voiceSelect.innerHTML = '<option value="" disabled selected>Select a Voice</option>';
+        voiceSelect.disabled = false;
+
+        const filteredVoices = allVoices.filter(v => v.short_name.startsWith(langCode));
+        
+        filteredVoices.forEach(voice => {
+            const option = document.createElement("option");
+            option.value = voice.short_name;
+            // "English (United States) Aria Neural" -> "Aria Neural"
+            let displayName = voice.name;
+            if (voice.name.includes(')')) {
+                displayName = voice.name.split(')')[1].trim();
+            }
+            option.textContent = displayName;
+            voiceSelect.appendChild(option);
+        });
     }
 
     function checkFormValidity() {
@@ -51,6 +106,11 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
             fileNameDisplay.textContent = 'Click to select a PDF file';
         }
+        checkFormValidity();
+    });
+
+    languageSelect.addEventListener('change', (e) => {
+        populateVoices(e.target.value);
         checkFormValidity();
     });
 

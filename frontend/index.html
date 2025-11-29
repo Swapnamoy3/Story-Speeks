@@ -27,9 +27,16 @@
                 <input type="file" id="pdfFile" accept=".pdf" required>
 
                 <div class="voice-selection">
-                    <label for="voice-select">Choose a voice:</label>
-                    <select name="voice" id="voice-select" required>
-                        <option value="" disabled selected>Loading voices...</option>
+                    <label for="language-select">Choose a Language:</label>
+                    <select id="language-select" required>
+                        <option value="" disabled selected>Loading languages...</option>
+                    </select>
+                </div>
+
+                <div class="voice-selection">
+                    <label for="voice-select">Choose a Voice:</label>
+                    <select name="voice" id="voice-select" disabled required>
+                        <option value="" disabled selected>Select a language first</option>
                     </select>
                 </div>
                 
