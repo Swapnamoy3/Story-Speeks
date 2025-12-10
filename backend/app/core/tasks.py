@@ -128,7 +128,7 @@ async def convert_pdf_to_audio(job_id: str, pdf_path: Path):
         
         # Concurrency Limiting
         # Reduced to 5 to avoid rate limiting on cloud environments like Render
-        semaphore = asyncio.Semaphore(5) 
+        semaphore = asyncio.Semaphore(20) 
         
         completed_chunks = 0
         total_chunks = len(sentences)
